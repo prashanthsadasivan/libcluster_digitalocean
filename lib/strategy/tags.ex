@@ -35,59 +35,73 @@ defmodule ClusterDO.Strategy.Tags do
     nodes = Node.list()
 
     added =
-    MapSet.union(
-    MapSet.difference(new_nodelist, meta),
-    MapSet.new(Enum.filter(new_nodelist, &(&1 not in nodes)))
-    )
+      MapSet.union(
+        MapSet.difference(new_nodelist, meta),
+        MapSet.new(Enum.filter(new_nodelist, &(&1 not in nodes)))
+      )
 
     removed = MapSet.difference(state.meta, new_nodelist)
 
     new_nodelist =
-    case Cluster.Strategy.disconnect_nodes(
-    topology,
-    state.disconnect,
-    state.list_nodes,
-    MapSet.to_list(removed)
-    ) do
-      :ok ->
-        new_nodelist
+      case Cluster.Strategy.disconnect_nodes(
+             topology,
+             state.disconnect,
+             state.list_nodes,
+             MapSet.to_list(removed)
+           ) do
+        :ok ->
+          new_nodelist
 
-      {:error, bad_nodes} ->
-        # Add back the nodes which should have been removed, but which couldn't be for some reason
-      Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
-        MapSet.put(acc, n)
-      end)
-    end
+        {:error, bad_nodes} ->
+          # Add back the nodes which should have been removed, but which couldn't be for some reason
+          Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
+            MapSet.put(acc, n)
+          end)
+      end
 
     new_nodelist =
-    case Cluster.Strategy.connect_nodes(
-    topology,
-    state.connect,
-    state.list_nodes,
-    MapSet.to_list(added)
-    ) do
-      :ok ->
-        new_nodelist
+      case Cluster.Strategy.connect_nodes(
+             topology,
+             state.connect,
+             state.list_nodes,
+             MapSet.to_list(added)
+           ) do
+        :ok ->
+          new_nodelist
 
-      {:error, bad_nodes} ->
-        # Remove the nodes which should have been added, but couldn't be for some reason
-      Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
-        MapSet.delete(acc, n)
-      end)
-    end
+        {:error, bad_nodes} ->
+          # Remove the nodes which should have been added, but couldn't be for some reason
+          Enum.reduce(bad_nodes, new_nodelist, fn {n, _}, acc ->
+            MapSet.delete(acc, n)
+          end)
+      end
 
     Process.send_after(self(), :load, polling_interval(state))
 
     %State{state | :meta => new_nodelist}
   end
 
-
   defp polling_interval(%State{config: config}) do
     Keyword.get(config, :polling_interval, @default_polling_interval)
   end
 
-  def get_nodes(state) do
-    []
-  end
+  def get_nodes(%State{config: config}) do
+    tag_name = Keyword.fetch!(config, :tag_name)
+    app_name = Keyword.fetch!(config, :app_name)
+    token = Keyword.fetch!(config, :token)
 
+    with client <- DigitalOcean.Client.new(token),
+         response when is_map(response) <- DigitalOcean.Client.droplets(client, tag_name),
+         droplets <- Map.get(response, "droplets"),
+         nodes <-
+           Enum.map(droplets, fn d ->
+             d
+             |> Map.get("networks")
+             |> List.first()
+             |> Map.get("ip_address")
+             |> Kernal.<>(app_name)
+           end) do
+      nodes
+    end
+  end
 end

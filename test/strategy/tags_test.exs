@@ -111,7 +111,9 @@ defmodule Strategy.TagsTest do
       disconnect: {:net_kernel, :disconnect, []},
       list_nodes: {:erlang, :nodes, [:connected]},
       config: [
-        tagname: @tagname
+        tag_name: @tagname,
+        app_name: "some_app_name",
+        token: "some_token"
       ]
     }
 
@@ -123,7 +125,7 @@ defmodule Strategy.TagsTest do
     assert :load == send(pid, :load)
 
     assert %Cluster.Strategy.State{
-             config: [tagname: @tagname],
+             config: [tag_name: @tagname],
              connect: {:net_kernel, :connect, []},
              disconnect: {:net_kernel, :disconnect, []},
              list_nodes: {:erlang, :nodes, [:connected]},
