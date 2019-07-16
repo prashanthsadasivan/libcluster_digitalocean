@@ -99,7 +99,7 @@ defmodule ClusterDO.Strategy.Tags do
           |> List.first()
           |> Map.get("ip_address")
 
-        "#{app_name}@#{ip}"
+        :"#{app_name}@#{ip}"
       end)
     else
       {:error, api_issue} ->
