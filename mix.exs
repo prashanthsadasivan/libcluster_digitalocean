@@ -22,6 +22,8 @@ defmodule LibclusterDigitalocean.MixProject do
   defp deps do
     [
       {:tesla, "~> 1.2.1"},
+      {:hackney, "~> 1.14.0"},
+      {:jason, ">= 1.0.0"},
       {:libcluster, "~> 2.0 or ~> 3.0"}
     ]
   end

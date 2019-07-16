@@ -85,23 +85,25 @@ defmodule ClusterDO.Strategy.Tags do
     Keyword.get(config, :polling_interval, @default_polling_interval)
   end
 
-  def get_nodes(%State{config: config}) do
+  def get_nodes(%State{topology: topology, config: config}) do
     tag_name = Keyword.fetch!(config, :tag_name)
     app_name = Keyword.fetch!(config, :app_name)
     token = Keyword.fetch!(config, :token)
 
     with client <- DigitalOcean.Client.new(token),
-         response when is_map(response) <- DigitalOcean.Client.droplets(client, tag_name),
-         droplets <- Map.get(response, "droplets"),
-         nodes <-
-           Enum.map(droplets, fn d ->
-             d
-             |> Map.get("networks")
-             |> List.first()
-             |> Map.get("ip_address")
-             |> Kernal.<>(app_name)
-           end) do
-      nodes
+         {:ok, droplets} <- DigitalOcean.Client.droplets(client, tag_name) do
+      Enum.map(droplets, fn d ->
+        ip =
+          d
+          |> get_in(["networks", "v4"] )
+          |> List.first()
+          |> Map.get("ip_address")
+
+        "#{app_name}@#{ip}"
+      end)
+    else
+      {:error, api_issue} ->
+        warn(topology, "issue with digital_ocean_api: #{inspect(api_issue)}")
     end
   end
 end
