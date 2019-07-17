@@ -107,8 +107,8 @@ defmodule Strategy.TagsTest do
 
     ops = %Cluster.Strategy.State{
       topology: ClusterDO.Strategy.Tags,
-      connect: {:net_kernel, :connect, []},
-      disconnect: {:net_kernel, :disconnect, []},
+      connect: {__MODULE__, :dummy_connect, []},
+      disconnect: {__MODULE__, :dummy_disconnect, []},
       list_nodes: {:erlang, :nodes, [:connected]},
       config: [
         tag_name: @tagname,
