@@ -104,6 +104,7 @@ defmodule ClusterDO.Strategy.Tags do
     else
       {:error, api_issue} ->
         warn(topology, "issue with digital_ocean_api: #{inspect(api_issue)}")
+        []
     end
   end
 end
