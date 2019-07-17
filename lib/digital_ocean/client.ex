@@ -12,7 +12,7 @@ defmodule DigitalOcean.Client do
     middleware = [
       {Tesla.Middleware.BaseUrl, "https://api.digitalocean.com/v2"},
       Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"Authorization", "Bearer: " <> token}]}
+      {Tesla.Middleware.Headers, [{"Authorization", "Bearer " <> token}]}
     ]
 
     Tesla.client(middleware)
